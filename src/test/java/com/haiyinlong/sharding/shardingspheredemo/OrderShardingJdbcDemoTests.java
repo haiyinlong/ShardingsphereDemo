@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * OrderShardingJdbcDemoTests
@@ -27,5 +28,29 @@ public class OrderShardingJdbcDemoTests extends ShardingsphereDemoApplicationTes
             orderEntity.setStatus(0);
             orderRepository.save(orderEntity);
         }
+    }
+
+    @Test
+    void testSaveHistoryUserIdOrder() {
+        OrderEntity orderEntity = new OrderEntity();
+        orderEntity.setUserId(1185182762139648L);
+        orderEntity.setOrderNumber("20251014");
+        orderEntity.setCreateTime(LocalDateTime.now());
+        orderEntity.setUpdateTime(LocalDateTime.now());
+        orderEntity.setStatus(0);
+        orderRepository.save(orderEntity);
+    }
+
+    @Test
+    void testGetHistoryUserIdOrder() {
+        List<OrderEntity> userOrderList = orderRepository.findByUserId(1185182762139648L);
+        System.out.println(userOrderList.size());
+    }
+
+    @Test
+    void testGetUserIdOrderByBetweenUserId() {
+        List<OrderEntity> userOrderList = orderRepository.findByUserIdBetween(1185182762139609L,1185182762139648L);
+        System.out.println(userOrderList.size());
+
     }
 }

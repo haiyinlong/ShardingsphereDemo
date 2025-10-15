@@ -1,4 +1,13 @@
 dataSources:
+  bus:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.8.12:3306/bus?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: leomaster
+    password: leomastermysql
+    hikari:
+      maximumPoolSize: 20
+      minimumIdle: 5
   bus0:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
@@ -25,11 +34,11 @@ rules:
   - !SHARDING
     tables:
       user:
-        actualDataNodes: bus${0..1}.user
+        actualDataNodes: bus.user,bus${0..1}.user
         databaseStrategy:
           standard:
             shardingColumn: user_id
-            shardingAlgorithmName: db-inline
+            shardingAlgorithmName: smart-db-router
 #        tableStrategy:   #不要配置，配置了就会执行分表操作
 #          standard:
 #            shardingColumn: user_id
@@ -38,14 +47,19 @@ rules:
           column: user_id
           keyGeneratorName: snowflake_generator
       order:
-        actualDataNodes: bus${0..1}.order
+        actualDataNodes: bus.order,bus${0..1}.order
         databaseStrategy:
           standard:
             shardingColumn: user_id
-            shardingAlgorithmName: db-inline
+            shardingAlgorithmName: smart-db-router
     bindingTables:
       - user,order
     shardingAlgorithms:
+      smart-db-router:
+        type: CLASS_BASED
+        props:
+          strategy: STANDARD
+          algorithmClassName: com.haiyinlong.sharding.shardingspheredemo.config.SmartUserShardingAlgorithm
       db-inline:
         type: INLINE
         props:

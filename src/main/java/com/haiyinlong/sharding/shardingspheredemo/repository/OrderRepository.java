@@ -4,6 +4,8 @@ import com.haiyinlong.sharding.shardingspheredemo.entity.OrderEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * OrderRepository
  * @author HaiYinLong
@@ -11,4 +13,7 @@ import org.springframework.stereotype.Repository;
 **/
 @Repository
 public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
+    List<OrderEntity> findByUserId(Long userId);
+
+    List<OrderEntity> findByUserIdBetween(long startUserId, long endUserId);
 }

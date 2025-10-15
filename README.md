@@ -155,9 +155,107 @@ mvn spring-boot:run
 ✅ 优势：
 * 相同 user_id 的 user 和 order 始终在同一个库，支持高效关联查询。
 * 字典表变更会自动同步到所有节点。
-
 ---
-## 📚 思考
+## 🧩 旧库进行分库
+自定义配置分库策略，并修改配置
+
+```java
+public class SmartUserShardingAlgorithm implements StandardShardingAlgorithm<Long> {
+    private static final Long HISTORY_USER_ID = 1185182762139648L;
+    @Override
+    public String doSharding(Collection<String> availableTargetNames, PreciseShardingValue<Long> shardingValue) {
+        Long currentUserId = shardingValue.getValue();
+        if(currentUserId <= HISTORY_USER_ID){
+            return shardingValue.getDataNodeInfo().getPrefix();
+        }
+        return shardingValue.getDataNodeInfo().getPrefix()+(currentUserId % 2);
+    }
+
+    @Override
+    public Collection<String> doSharding(
+            Collection<String> availableTargetNames,
+            RangeShardingValue<Long> shardingValue) {
+
+        // 获取范围区间
+        Long lower = shardingValue.getValueRange().hasLowerBound() ? shardingValue.getValueRange().lowerEndpoint() : null;
+        Long upper = shardingValue.getValueRange().hasUpperBound() ? shardingValue.getValueRange().upperEndpoint() : null;
+
+        Set<String> result = new HashSet<>();
+
+        // 如果没有范围（如 null），退化为全库扫描（可选）
+        if (lower == null && upper == null) {
+            result.add("bus");
+            result.add("bus0");
+            result.add("bus1");
+            result.retainAll(availableTargetNames);
+            return result;
+        }
+
+        // 情况1：整个范围都在历史用户内（<= HISTORY_USER_ID）
+        if (upper != null && upper <= HISTORY_USER_ID) {
+            if (availableTargetNames.contains("bus")) {
+                result.add("bus");
+            }
+        }
+        // 情况2：整个范围都在新用户内（> HISTORY_USER_ID）
+        else if (lower != null && lower > HISTORY_USER_ID) {
+            if (lower % 2 == 0) result.add("bus0");
+            if ((lower + 1) % 2 == 0 || (upper != null && upper >= lower + 1)) {
+                result.add("bus1");
+            }
+            result.retainAll(availableTargetNames);
+        }
+        // 情况3：范围跨越了 HISTORY_USER_ID（最常见）
+        else {
+            // 必须查询 bus（历史数据）
+            if (availableTargetNames.contains("bus")) {
+                result.add("bus");
+            }
+            // 也必须查询 bus0 和 bus1（新数据）
+            if (availableTargetNames.contains("bus0")) {
+                result.add("bus0");
+            }
+            if (availableTargetNames.contains("bus1")) {
+                result.add("bus1");
+            }
+        }
+
+        return result;
+    }
+}
+
+```
+
+```yaml
+rules:
+  - !SHARDING
+    tables:
+      user:
+        actualDataNodes: bus.user,bus${0..1}.user
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: smart-db-router  # 指定自定义分库策略
+      order:
+        actualDataNodes: bus.order,bus${0..1}.order
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: smart-db-router   # 指定自定义分库策略
+    shardingAlgorithms:
+      smart-db-router:  # 配置自定义分库策略
+        type: CLASS_BASED
+        props:
+          strategy: STANDARD
+          algorithmClassName: com.haiyinlong.sharding.shardingspheredemo.config.SmartUserShardingAlgorithm
+      
+```
+```sql
+ # 创建bus库, user_id表新增测试用户
+INSERT INTO bus.`user` (user_id, account, create_time) VALUES(1185182762139648, 1, '2025-10-15 11:33:10');
+```
+---
+## 💬 思考
 1. 数据分库后，后台业务系统怎么进行分页数据查询?
 >  a. 引入ES/ClickHouse/Doris 新增汇总宽表？会有延时，且宽表数据量会变大。     
 >  b. 使用时间加游标的方式，获取最新数据。但是不能跨页查询。    
