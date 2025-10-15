@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ShardingsphereDemo
+  jpa:
+    properties:
+      hibernate:
+        id:
+          new_generator_mappings: false
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:shardingsphere-config.yml
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+

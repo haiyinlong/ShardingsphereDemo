@@ -1,0 +1,62 @@
+dataSources:
+  bus0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.8.12:3306/bus0?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: leomaster
+    password: leomastermysql
+    hikari:
+      maximumPoolSize: 20
+      minimumIdle: 5
+  bus1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.8.12:3306/bus1?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: leomaster
+    password: leomastermysql
+    hikari:
+      maximumPoolSize: 20
+      minimumIdle: 5
+
+rules:
+  - !BROADCAST
+    tables:
+      - sys_dic
+  - !SHARDING
+    tables:
+      user:
+        actualDataNodes: bus${0..1}.user
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: db-inline
+#        tableStrategy:   #不要配置，配置了就会执行分表操作
+#          standard:
+#            shardingColumn: user_id
+#            shardingAlgorithmName: tbl-inline
+        keyGenerateStrategy:
+          column: user_id
+          keyGeneratorName: snowflake_generator
+      order:
+        actualDataNodes: bus${0..1}.order
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: db-inline
+    bindingTables:
+      - user,order
+    shardingAlgorithms:
+      db-inline:
+        type: INLINE
+        props:
+          algorithm-expression: bus${user_id % 2}
+    keyGenerators:
+      snowflake_generator:
+        type: SNOWFLAKE
+        props:
+          worker-id: 5
+          data-center-id: 1
+
+props:
+  sql-show: true
+  show-process-list-enabled: true
