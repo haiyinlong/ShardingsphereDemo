@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: shardingsphere-proxy-config
+data:
+  shardingsphere-proxy-config.yaml: |-
+    dataSources:
+      bus:
+        dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+        driverClassName: com.mysql.cj.jdbc.Driver
+        jdbcUrl: jdbc:mysql://local-mysql:3306/bus?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+        username: leomaster
+        password: leomastermysql
+        hikari:
+          maximumPoolSize: 20
+          minimumIdle: 5
+      bus0:
+        dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+        driverClassName: com.mysql.cj.jdbc.Driver
+        jdbcUrl: jdbc:mysql://local-mysql:3306/bus0?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+        username: leomaster
+        password: leomastermysql
+        hikari:
+          maximumPoolSize: 20
+          minimumIdle: 5
+      bus1:
+        dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+        driverClassName: com.mysql.cj.jdbc.Driver
+        jdbcUrl: jdbc:mysql://local-mysql:3306/bus1?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai
+        username: leomaster
+        password: leomastermysql
+        hikari:
+          maximumPoolSize: 20
+          minimumIdle: 5
+    
+    rules:
+      - !BROADCAST
+        tables:
+          - sys_dic
+      - !SHARDING
+        tables:
+          user:
+            actualDataNodes: bus.user,bus${0..1}.user
+            databaseStrategy:
+              standard:
+                shardingColumn: user_id
+                shardingAlgorithmName: smart-db-router
+            keyGenerateStrategy:
+              column: user_id
+              keyGeneratorName: snowflake_generator
+          order:
+            actualDataNodes: bus.order,bus${0..1}.order
+            databaseStrategy:
+              standard:
+                shardingColumn: user_id
+                shardingAlgorithmName: smart-db-router
+        bindingTables:
+          - user,order
+        shardingAlgorithms:
+          smart-db-router:
+            type: CLASS_BASED
+            props:
+              strategy: STANDARD
+              algorithmClassName: com.haiyinlong.sharding.shardingspheredemo.config.SmartUserShardingAlgorithm
+          db-inline:
+            type: INLINE
+            props:
+              algorithm-expression: bus${user_id % 2}
+        keyGenerators:
+          snowflake_generator:
+            type: SNOWFLAKE
+            props:
+              worker-id: 5
+              data-center-id: 1
+    
+    props:
+      sql-show: true
+      show-process-list-enabled: true
+

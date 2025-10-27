@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @Table(name = "`order`")
-public class OrderEntity {
+public class OrderEntity implements java.io.Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

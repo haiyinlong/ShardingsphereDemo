@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: shardingsphere-service
+spec:
+    selector:
+        app: shardingsphere-jdbc-demo
+    ports:
+        -   port: 80
+            targetPort: 8080
+            protocol: TCP
+            nodePort: 30001
+    type: NodePort  # ClusterIP 集群内部访问 NodePort 集群外部访问 LoadBalancer 负载均衡
+

@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    properties:
+      hibernate:
+        id:
+          new_generator_mappings: false
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:shardingsphere-test-config.yml
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+  cloud:
+    nacos:
+      discovery:
+        server-addr: local-nacos:10000
+        namespace: 806541cb-97ef-4c83-9a63-513dacfe609b
+        group: DEFAULT_GROUP
+        username: nacos
+        password: nacos
+

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shardingsphere-jdbc-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shardingsphere-jdbc-demo
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: shardingsphere-jdbc-demo
+    spec:
+      containers:
+        - name: shardingsphere-jdbc-demo
+          image: 192.168.5.25/snail/shardingsphere-demo:1.6
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: test
+            - name: JAVA_OPTS
+              value: "-Djava.security.egd=file:/dev/./urandom -Dspring.cloud.nacos.discovery.server-addr=local-nacos:10000"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1G"
+              cpu: "300m"
+          startupProbe:    # pod 监控是否启动，如果规定时间内未启动则重启
+            httpGet:
+              path: /actuator/health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 30
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe: # pod 监控是否就绪，如果规定时间内未就绪就移出service中的引用，等待pod就绪再加入到service中
+            httpGet:
+              path: /actuator/health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe: # pod 监控是否存活，如果规定时间内未存活则重启
+            httpGet:
+                path: /actuator/health
+                port: 8080
+                scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: regcred
